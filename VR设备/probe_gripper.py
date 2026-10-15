@@ -20,7 +20,7 @@ Robotiq 2F（从站 9）、因时 EG2 都是这个路子。
 
 本机设备为航凯 HKVR-TG9801，用户当前接武汉若比特 USB-CAN。
 不能根据本脚本的 Modbus 无回复就断定硬件不支持 CAN。CAN 主动诊断请使用
-VEL 的 `python -m experiments.robot.ar5.probe_hkvr_can`，可读适配器配置并查询全部接收 ID。
+SO101 的 `python -m atom_robot.ar5.probe_hkvr_can`（在 数据_硬件/SO101 下跑），可读适配器配置并查询全部接收 ID。
 手册中“通过适配盒”的描述尚不能单独确定这只实物的接口版本。
 """
 from __future__ import annotations
@@ -224,10 +224,10 @@ def probe_xpanel(vout: int, slaves, regs, verbose=False) -> int:
     夹爪上电后有的型号会自检回零，那是它自己的行为，属于正常上电动作。
     """
     import sys as _s
-    from ws_paths import VEL_REPO
-    _s.path.insert(0, str(VEL_REPO))
-    from experiments.robot.ar5.ar5_env import AR5Env
-    from experiments.robot.ar5.config import AR5Config
+    from ws_paths import SO101
+    _s.path.insert(0, str(SO101))
+    from atom_robot.ar5.ar5_env import AR5Env
+    from atom_robot.ar5.config import AR5Config
 
     cfg = AR5Config(mock=False, real_hand_in_mock=False)
     cfg.use_hand = False

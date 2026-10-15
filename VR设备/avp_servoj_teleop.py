@@ -37,8 +37,8 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from ws_paths import VEL_REPO  # noqa: E402
-AR5_ROOT = str(VEL_REPO)
+from ws_paths import SO101  # noqa: E402
+AR5_ROOT = str(SO101)   # atom_robot 所在，AR5 驱动和 SO101 共用一份
 sys.path.insert(0, AR5_ROOT)
 
 from avp_arm_teleop import (OneEuro, filter_rotation, yaw_matrix, mirror_matrix,  # noqa: E402
@@ -46,8 +46,8 @@ from avp_arm_teleop import (OneEuro, filter_rotation, yaw_matrix, mirror_matrix,
                             connect_streamer, HandTracker, PINCH_ON, PINCH_OFF, DEFAULT_CALIB)
 from avp_movel_teleop import JumpGate, KalmanCV, RunLog, e2e_report  # noqa: E402
 from hand_retarget import Calibration, Retargeter  # noqa: E402
-from experiments.robot.ar5.ar5_env import AR5Env  # noqa: E402
-from experiments.robot.ar5.config import AR5Config  # noqa: E402
+from atom_robot.ar5.ar5_env import AR5Env  # noqa: E402
+from atom_robot.ar5.config import AR5Config  # noqa: E402
 import inspire_hand6 as ih  # noqa: E402
 
 

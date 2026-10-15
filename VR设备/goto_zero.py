@@ -20,12 +20,12 @@ import sys
 
 import numpy as np
 
-from ws_paths import HERE, VEL_REPO  # noqa: E402
-sys.path.insert(0, str(VEL_REPO))
+from ws_paths import HERE, SO101  # noqa: E402
+sys.path.insert(0, str(SO101))   # atom_robot：AR5 驱动和 SO101 共用一份
 sys.path.insert(0, str(HERE))
 
-from experiments.robot.ar5.ar5_env import AR5Env          # noqa: E402
-from experiments.robot.ar5.config import AR5Config        # noqa: E402
+from atom_robot.ar5.ar5_env import AR5Env          # noqa: E402
+from atom_robot.ar5.config import AR5Config        # noqa: E402
 
 
 def report(q, cfg, tag):

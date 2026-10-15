@@ -58,16 +58,16 @@ import logging
 
 import numpy as np
 
-from ws_paths import VEL_REPO  # noqa: E402
-AR5_ROOT = str(VEL_REPO)
+from ws_paths import SO101  # noqa: E402
+AR5_ROOT = str(SO101)   # atom_robot 所在，AR5 驱动和 SO101 共用一份
 sys.path.insert(0, AR5_ROOT)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from avp_stream import VisionProStreamer  # noqa: E402
 
-from experiments.robot.ar5.ar5_env import AR5Env, ACTION_DIM  # noqa: E402
-from experiments.robot.ar5.config import AR5Config  # noqa: E402
-from experiments.robot.ar5.transforms import axis_angle_to_matrix  # noqa: E402
+from atom_robot.ar5.ar5_env import AR5Env, ACTION_DIM  # noqa: E402
+from atom_robot.ar5.config import AR5Config  # noqa: E402
+from atom_robot.ar5.transforms import axis_angle_to_matrix  # noqa: E402
 
 from hand_retarget import (Calibration, PINCH_FINGERS, Retargeter,  # noqa: E402
                            pinch_distances, raw_features)
@@ -1021,6 +1021,7 @@ def main():
     config = AR5Config(mock=args.mock, real_hand_in_mock=False)
     config.arm.ip, config.arm.local_ip = args.robot_ip, args.local_ip
     config.use_hand = False                    # 手由本项目自己的驱动接管
+    config.arm.joint_goal_step = 0.075         # 本项目逆解是照 0.075 调的；atom_robot 默认 0.014 是给 SO101 主从臂的
     config.arm.use_realtime = True
     config.max_lead = float(args.max_lead)          # 缰绳放宽，遥操才跟得上
     # 硬重锚阈值必须比缰绳长，否则两者打架：指令被缰绳放到 lead 处 → 超过重锚

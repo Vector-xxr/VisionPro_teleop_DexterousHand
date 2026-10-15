@@ -14,9 +14,10 @@
 import sys, time
 import numpy as np
 
-from ws_paths import HERE, VEL_AR5  # noqa: E402
+from ws_paths import HERE, AR5_PKG, SO101  # noqa: E402
 sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(VEL_AR5))
+sys.path.insert(0, str(SO101))
+sys.path.insert(0, str(AR5_PKG))
 
 from vel_kin import AR5Kinematics          # 按文件路径取，避开同名 PyPI 包
 from ar5_ik import AR5IK, AR5OptIK

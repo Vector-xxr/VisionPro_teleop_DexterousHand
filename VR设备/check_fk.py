@@ -23,8 +23,9 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-from ws_paths import SDK_ROOT, VEL_AR5 as _VEL_AR5  # noqa: E402
-VEL_AR5 = str(_VEL_AR5)
+from ws_paths import SDK_ROOT, SO101, AR5_PKG  # noqa: E402
+sys.path.insert(0, str(SO101))   # atom_robot 的 config 要能导入
+VEL_AR5 = str(AR5_PKG)   # 名字沿用；10-15 起指 atom_robot/ar5
 
 
 def rpy_to_matrix(rpy):

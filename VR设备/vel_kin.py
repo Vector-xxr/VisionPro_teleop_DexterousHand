@@ -25,7 +25,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
-from ws_paths import VEL_AR5 as AR5_ROOT  # noqa: E402  （不写死本机路径，见 ws_paths.py）
+from ws_paths import AR5_PKG as AR5_ROOT  # noqa: E402  （atom_robot/ar5，和 SO101 共用；见 ws_paths.py）
 
 _CACHE = {}
 
@@ -37,7 +37,7 @@ def load_vel_module(name: str):
     path = AR5_ROOT / f"{name}.py"
     if not path.is_file():
         raise ImportError(
-            f"找不到 {path}。vel_ar5 不在预期位置——工作区根是按 ws_paths.py 往上找的；"
+            f"找不到 {path}。atom_robot 不在预期位置——工作区根是按 ws_paths.py 往上找的；"
             f"VR设备 被单独拷走时，用环境变量 YUHANG_WS 指到工作区根。")
     # 起一个**不会和任何已安装包撞名**的模块名
     spec = importlib.util.spec_from_file_location(f"_vel_ar5_{name}", path)

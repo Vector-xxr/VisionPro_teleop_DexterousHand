@@ -22,8 +22,9 @@ def _find_workspace() -> Path:
 
 
 WS = _find_workspace()
-VEL_REPO = WS / "算法" / "VEL" / "vel_ar5" / "openvla-energy"   # vel_ar5 的 AR5 驱动和运动学
-VEL_AR5 = VEL_REPO / "experiments" / "robot" / "ar5"
 SDK_ROOT = WS / "数据_硬件" / "xCoreSDK-Python"                  # 珞石 SDK
 SO101 = WS / "数据_硬件" / "SO101"                               # atom_robot 所在目录
+# AR5 驱动：2026-10-15 起和 SO101 共用 atom_robot 这一份（原来用 vel_ar5 里 9-23 的旧副本）。
+# 运动学 kinematics.py / transforms.py 两份逐字节相同，换过来不影响逆解。
+AR5_PKG = SO101 / "atom_robot" / "ar5"
 DEXGRASPVLA = WS / "算法" / "DexGraspVLA"

@@ -13,8 +13,9 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from ws_paths import VEL_AR5  # noqa: E402
-sys.path.insert(0, str(VEL_AR5))
+from ws_paths import AR5_PKG, SO101  # noqa: E402
+sys.path.insert(0, str(SO101))
+sys.path.insert(0, str(AR5_PKG))
 
 from inspire_hand6 import INDEX, InspireHand6, index_floor  # noqa: E402
 
@@ -161,17 +162,18 @@ def test_imports():
     （或者更隐蔽的 `cannot import name 'AR5Kinematics'`）——取决于调用方
     有没有恰好把 vel_ar5 插在 sys.path 前面。按文件路径加载才是确定的。
     """
-    print("\n【导入】同名 PyPI 包不许把 vel_ar5 的运动学顶掉")
+    print("\n【导入】同名 PyPI 包不许把 AR5 驱动的运动学顶掉")
     import importlib
     from vel_kin import load_vel_module
     src = load_vel_module("kinematics").__file__
-    ck("拿到的是 vel_ar5 的 kinematics.py", "vel_ar5" in src, src)
+    # 10-15 起 AR5 驱动和 SO101 共用 atom_robot 这一份（原来是 vel_ar5 里的旧副本）
+    ck("拿到的是 atom_robot 的 kinematics.py", "/atom_robot/ar5/" in src.replace("\\", "/"), src)
     # 只做提示，不做断言：`import kinematics` 拿到谁本来就随 sys.path 变，
     # 那正是这里要消除的不确定性 —— 拿它当断言等于把不确定性写进测试。
     try:
         import kinematics as amb
         where = "site-packages（同名 PyPI 包）" if "site-packages" in (amb.__file__ or "") \
-                else "vel_ar5"
+                else "atom_robot"
         print(f"    （参考）裸 `import kinematics` 此刻解析到: {where}")
     except ImportError:
         print("    （参考）裸 `import kinematics` 此刻解析不到任何东西")
