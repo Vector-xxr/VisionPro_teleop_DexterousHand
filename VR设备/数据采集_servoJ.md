@@ -114,7 +114,7 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python avp_servoj_teleop.py 192.16
 | `--frame-cap` | 0（不限） | 一条最多多少帧，到了自动存盘。**按帧数不按秒**：回路周期抖一下不该改变一条的长短。30 Hz 下 900 帧 = 30 秒 |
 | `--reset-seconds` | 5 | 存完一条之后空格不响应的秒数 |
 | `--record-hz` | 30 | 录制帧率。相机就是 30 fps，设高了只会录到重复帧 |
-| `--cam-top` / `--cam-front` | 用 config 里的 | 覆盖 `cam_high` / `cam_front` 的源，写法同 config（`orbbec:<序列号>`、`v4l2:<路径>`）。帮助文字里「序列号都一样」「不在腕上」是过时的 |
+| `--cam-top` / `--cam-front` | 用 config 里的 | 覆盖 `cam_high` / `cam_front` 的源，写法同 config（`orbbec:<序列号>`、`v4l2:<路径>`）。305 别写成 `orbbec:…` |
 | `--ee` | `hand` | 末端：`hand` 因时手 6 维；`gripper` 夹爪 1 维，**只记录左手捏合算出的指令、不驱动夹爪**；`none` 只有臂 |
 | `--auto-record` | 关 | 接合即开录、摘离合即存盘。**别用**，理由见上 |
 
@@ -174,7 +174,7 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python replay_episode.py --src ~/a
 ```
 
 `--episode` 给的是**文件名里的编号**，不是列表下标。删过数据之后两者会对不上，
-所以按编号找不到时会把现有编号列出来。`--cam` 给键名（`cam_high` / `cam_front`），帮助文字里写的 top / wrist 是过时的。
+所以按编号找不到时会把现有编号列出来。`--cam` 给键名（`cam_high` / `cam_front`）。
 
 窗口里：空格暂停、`←` `→` 单帧步进、`a` `d` 上一条下一条、`q` 退出。
 底部的绿色条是末端开合（因时手六条），顶部一行是这一帧末端走了多少毫米。

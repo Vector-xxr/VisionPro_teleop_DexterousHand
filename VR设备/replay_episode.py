@@ -5,7 +5,7 @@
     python replay_episode.py --episode 7           # 只看第 7 条
     python replay_episode.py --all                 # 从头一条条看
     python replay_episode.py --all --only-flagged  # 只看自动检查报了问题的
-    python replay_episode.py --episode 7 --cam cam_front   # 只看侧视那一路
+    python replay_episode.py --episode 7 --cam cam_front   # 只看腕部那一路
 
 两路相机默认并排显示。窗口里：
 
@@ -217,7 +217,7 @@ def main() -> int:
     ap.add_argument("--episode", type=int, help="看第几条（就是文件名里的编号）")
     ap.add_argument("--all", action="store_true", help="从头一条条看")
     ap.add_argument("--only-flagged", action="store_true", help="只看列表里带 ⚠ 的")
-    ap.add_argument("--cam", help="只看某一路（top / wrist）。默认全部并排")
+    ap.add_argument("--cam", help="只看某一路，给键名（cam_high 俯视 / cam_front 腕部）。默认全部并排")
     a = ap.parse_args()
 
     src = Path(a.src).expanduser()

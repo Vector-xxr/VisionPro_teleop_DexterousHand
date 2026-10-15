@@ -141,7 +141,6 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python bench_ik.py       # 正常�
 - **腕部 Gemini 305 不能走 OBSENSOR**：一帧不出，还会把 V4L2 也弄坏，只能物理拔插救回来。
   10-15 起 `atom_robot` 的 config 让它走 V4L2（只开相机核对过，servoJ 录制里还没真跑过），见 [数据采集_servoJ](数据采集_servoJ.md) 第 2 节。
   别同时开 RobotJev（它只走 OBSENSOR）。
-- `--cam-top` / `--cam-front` 的帮助文字过时，还写着「序列号都一样」「不在腕上」。
 - `--ee gripper` 只记录指令、不驱动夹爪；那只航凯夹爪 9/30 过载后卡滞，在等厂家。
 - SO101 和 VR 两条线的采集默认都存到 `~/atom_episodes`，一个任务一个子目录，两条线的数据别混在一个目录里。
 - C++ 笛卡尔后端的编译目录带着旧路径缓存，要删掉重编，见 [cartesian_rt/README.md](cartesian_rt/README.md)。

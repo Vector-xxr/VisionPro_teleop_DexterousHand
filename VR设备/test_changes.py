@@ -514,4 +514,4 @@ if __name__ == "__main__":
     if FAILED:
         print(f"{len(FAILED)} 项失败：" + "、".join(FAILED))
         sys.exit(1)
-    print("全部通过。可以上真机了 —— 顺序见 README/回答里的分阶段清单。")
+    print("全部通过。注意这里测不到 servoJ 主链（选解层、延迟样条、beside），改了那些只能上真机看退出统计，见 README「离线测试」。")

@@ -662,11 +662,11 @@ def parse_args():
                    help="接合即开录、摘离合即存盘，不用按键。**一般别用**：现场还没摆好就开录，"
                         "数据看着正常但前几秒是空的")
     p.add_argument("--cam-top", default="",
-                   help="顶部相机设备路径，留空用 config 里的。**必须用 /dev/v4l/by-path/**，"
-                        "两台相机型号和序列号都一样，by-id 只有一条，video0/2 拔插会互换")
+                   help="俯视相机（cam_high）的源，留空用 atom_robot config 里的（Gemini 335，orbbec:CP0BB53000FC，"
+                        "走 OBSENSOR）。写法同 config：orbbec:<序列号>、v4l2:<路径>")
     p.add_argument("--cam-front", "--cam-wrist", dest="cam_front", default="",
-                   help="第二路相机设备路径，同上。**目前这台不在腕上**，它固定在台架上"
-                        "侧对着臂，所以数据里的键名是 cam_front。真装到腕上了再改名")
+                   help="腕部相机（cam_front，9/22 起是腕上的 Gemini 305）的源，留空用 config 里的"
+                        "（v4l2:/dev/ar5_cam_wrist）。**305 别写成 orbbec:… 走 OBSENSOR**：一帧不出，还要拔插才救得回")
     return p.parse_args()
 
 
@@ -755,7 +755,7 @@ def main():
     cfg.arm.use_realtime = False          # 我们自己进 RT，不要驱动的 1kHz 线程
     cfg.arm.ip, cfg.arm.local_ip = args.robot_ip, args.local_ip
     if args.record:
-        # 沿用 config 里的键名 cam_high（俯视）/ cam_front（侧视），命令行只改路径。
+        # 沿用 config 里的键名 cam_high（俯视）/ cam_front（9/22 起是腕部；之前是台架侧视），命令行只改源。
         # 不另起新名字：之前 297 条数据用的就是这两个名字，换名会让数据集对不上。
         if args.cam_top:
             cfg.cameras.sources["cam_high"] = args.cam_top
