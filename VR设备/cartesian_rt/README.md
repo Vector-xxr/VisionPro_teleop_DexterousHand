@@ -17,16 +17,22 @@ Python只读取头显、映射TCP目标和驱动灵巧手；C++子进程独占�
 ## 编译
 
 依赖：C++17、CMake、Eigen3、pthread；真实后端额外需要厂商匹配版本的C++ SDK。
+下面的命令都在 `VR设备` 目录下执行。
+
+**现有的 `build/`、`build-sdk/` 是在旧路径 `Project_Atom/遥操/VR设备` 下配置的**，CMakeCache 还记着旧路径，
+直接在上面跑 cmake 会报错。要重编哪个，先把哪个删掉（编译产物不进 git，删了重编即可）。
 
 不连接机器人、只用于离线测试的版本：
 
 ```bash
+rm -rf cartesian_rt/build
 cmake -S cartesian_rt -B cartesian_rt/build
 cmake --build cartesian_rt/build -j2
 ctest --test-dir cartesian_rt/build --output-on-failure
 ```
 
-它会拒绝所有非 `--mock` 运行。
+它会拒绝所有非 `--mock` 运行。`avp_arm_teleop.py --cart-worker` 不给时默认用的就是这个
+`cartesian_rt/build/cartesian_worker`，所以不显式指定的话只能做模拟运行。
 
 匹配AR SDK的正式构建（从 `VR设备` 目录执行）：
 
@@ -42,12 +48,16 @@ cmake --build cartesian_rt/build-ar -j2
 CMake会自动链接；也可通过 `XCORE_MODEL_LIBRARY` 显式指定。这是SDK链接依赖，
 本程序不调用该库的逆解接口。
 
-本机已有0.6.0 SDK的兼容性测试构建：
+本机已有0.6.0 SDK的兼容性测试构建（`build-sdk/`）。**这份 C++ SDK 不在工作区里**，在本机 `~/桌面/xCoreSDK_cpp-v0.6.0./`
+下（目录名末尾就带一个点），不随工作区拷走；工作区里的 `数据_硬件/xCoreSDK-Python` 是 Python 绑定，不能拿来编这个。
+重编时先删旧目录，SDK 位置换成实际所在：
 
 ```bash
+rm -rf cartesian_rt/build-sdk
+SDK=~/桌面/xCoreSDK_cpp-v0.6.0./xCoreSDK_cpp-v0.6.0
 cmake -S cartesian_rt -B cartesian_rt/build-sdk \
-  -DXCORE_SDK_ROOT=/home/crp-5070ti-01/桌面/xCoreSDK_cpp-v0.6.0./xCoreSDK_cpp-v0.6.0 \
-  -DXCORE_SDK_LIBRARY=/home/crp-5070ti-01/桌面/xCoreSDK_cpp-v0.6.0./xCoreSDK_cpp-v0.6.0/lib/Linux/x86_64/libxCoreSDK.so.0.6.0 \
+  -DXCORE_SDK_ROOT="$SDK" \
+  -DXCORE_SDK_LIBRARY="$SDK/lib/Linux/x86_64/libxCoreSDK.so.0.6.0" \
   -DXCORE_ROBOT_TYPE=xMateErProRobot
 cmake --build cartesian_rt/build-sdk -j2
 ```
@@ -62,10 +72,10 @@ cmake --build cartesian_rt/build-sdk -j2
   --robot-ip 192.168.2.160 --local-ip 192.168.2.222
 ```
 
-真实遥操（换为你实际编译的worker路径）：
+真实遥操（换为你实际编译的worker路径；`192.168.x.x` 换成头显界面上显示的 IP）：
 
 ```bash
-python avp_arm_teleop.py <头显IP> --no-cameras --arm-backend cart \
+PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python avp_arm_teleop.py 192.168.x.x --no-cameras --arm-backend cart \
   --cart-worker "$PWD/cartesian_rt/build-sdk/cartesian_worker" \
   --robot-ip 192.168.2.160 --local-ip 192.168.2.222 \
   --yaw -90 --hz 100 --no-rotation \
@@ -75,6 +85,9 @@ python avp_arm_teleop.py <头显IP> --no-cameras --arm-backend cart \
 ENTER挂离合，右手保持捏合，左手控制位移。先验证位置，再去掉 `--no-rotation` 验证姿态。
 TCP、质量和质心通过 `--tcp-z`、`--payload`、`--payload-com-z` 填写测量值。
 起点必须在基座坐标工作空间盒 `[0.22,-0.516,0.08]` 到 `[0.58,0.28,0.42]` m 内。
+这个盒子写死在 `control.hpp`（`lower` / `upper`）和 `../avp_cart_teleop.py` 的钳位里，是旧值；
+`atom_robot/ar5/config.py` 里的 `workspace_min/max` 已经放大到 `[0.20,-0.516,0.08]` 到 `[0.66,0.43,0.65]` m，
+MoveL 和 servoJ 用的是新盒子，cart 这条没跟着改。
 本后端从当前位置保持，**不自动回位**；需要回位时先退出，再单独运行 `home_arm.py`。
 
 ## 控制和故障行为

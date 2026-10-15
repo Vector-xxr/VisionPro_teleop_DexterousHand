@@ -1,170 +1,162 @@
-# Vision Pro → AR5 + 因时 RH56 遥操
+# Vision Pro 遥操 AR5 + 灵巧手
 
-**SO101 主臂 + 航凯 TG9801 夹爪请用 [SO101 夹爪遥操入口](SO101_航凯夹爪遥操.md)**。
-已接入 VEL 的 `teleop_joint` / `collect`，支持独立夹爪测试；下面内容是 Vision Pro 链路。
+用 Apple Vision Pro 的手部追踪遥操 AR5 七轴臂和因时 RH56 灵巧手：左手带着臂末端和五根手指走，右手捏合当离合；
+臂走 servoJ，逆解在本地做；可以边遥操边录数据。
 
-左手控制机械臂末端和灵巧手，键盘 ENTER 挂离合，右手**保持捏合**驱动机械臂。
-松开右手或摘离合时停止臂；手指独立跟踪。没有新头显帧超过 `--max-stale` 时摘离合。
+---
 
-## 当前控制后端
+## 当前状态
 
-| 后端 | 命令与逆解 | 状态 |
-|---|---|---|
-| `movel`（默认） | `moveAppend(list[MoveLCommand], ...)` 列表批量；控制器逆解和规划 | 已修复过滤、坐标和停机逻辑；仍为非实时排队执行 |
-| `cart` | Python发布最新TCP目标，独立C++进程按1ms周期发送笛卡尔位姿；控制器逆解 | 已实现、编译和离线验证；须用匹配AR固件的SDK真机验证 |
-| `rt` | 本地IK + Python关节实时流 | 保留为显式备选；其他后端失败不会自动切换到它 |
+- **主力是 servoJ**（`avp_servoj_teleop.py`）。基线是 2026-10-10 那次 275 秒的任务（`logs/servoj_20261010_140947.log`）：
+  逆解失败 0/25589，端到端延迟 72ms，对齐后残差 1.9mm，手 20.4Hz、0 错。
+- **2026-10-15 AR5 驱动换成 `数据_硬件/SO101/atom_robot`**，同日真机验收通过（`logs/servoj_20261015_151836.log`，34 秒）：
+  启动回位正常，逆解失败 0，端到端 72ms，残差 1.5mm，手 20.1Hz、0 错；`home_arm.py` 正常。
+- 手从 10-09 起默认走网口 Modbus TCP。
+- **servoJ 的 `--record` 还没真正采过数据**：本机 `~/atom_episodes`、`~/vel_episodes` 里的 497 个 npz 都没有它必写的 `ee_target` 字段。
 
-现在遥操走的是 servoJ，见 [遥操作_servoJ](遥操作_servoJ.md)；在它上面采数据见
-[数据采集](数据采集.md)；三条路怎么试出来的见 [AR5遥操三条路](AR5遥操三条路.md)。
+---
 
-完整历史实验保存在 [调试历史](调试历史_2026-09-20.md)。旧文档中的 37ms、42.8ms 等是历史测量，
-不是本次修改后的端到端延迟承诺。列表批量提交本来就受 SDK 支持，本次继续保留。
-
-## 环境与启动
+## 启动
 
 ```bash
-conda activate dexgraspvla
 cd ~/yuhang_workspace/数据_硬件/灵巧手遥操/VR设备
-fuser -v /dev/ttyUSB0  # 查看占用；不要杀掉可能在控制真机的进程
+PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python avp_servoj_teleop.py 192.168.x.x --planner spline --lag-ms 50 \
+    --rot-mode beside --ws-max-z 0.60 --w-psi 0.5 --max-step-rad 0.015
 ```
 
-头显 IP 从 Tracking Streamer 界面读取。机械臂默认 `192.168.2.160`，本机网卡默认
-`192.168.2.222`；可用 `--robot-ip` / `--local-ip` 覆盖。
+- `192.168.x.x` 换成头显 Tracking Streamer 界面上显示的 IP，每次可能变。
+- 这几个参数为什么要给、每个参数的原理，见 [遥操作_servoJ](遥操作_servoJ.md)。
+- **一启动臂就会先关节回位**，3 秒内 Ctrl+C 可取消，加 `--no-home` 跳过。
 
-MoveL：
+按键：
 
-```bash
-python avp_arm_teleop.py <头显IP> --no-cameras --arm-backend movel \
-  --yaw -90 --hz 100 --movel-dispatch-hz 50
-```
-
-TCP、负载和质心填写实际测量值，例如测得 TCP 沿法兰 Z 轴 150mm 时才加 `--tcp-z 0.150`。
-默认 `tcp-z=0`，受控点为法兰。`--payload 0` 表示不覆盖现有负载，不代表工具没有质量。
-`--payload-com-z` 为质心位置（m）。
-
-MoveL 沿用原来的启动回位流程；`--no-home` 跳过回位。运行中按 `h` 会先停止 MoveL，
-回位请退出后运行 `home_arm.py`，避免在一个会话里同时启动两个运动路径。
-
-C++ 笛卡尔实时后端的编译、SDK匹配和验证方法见 [cartesian_rt/README.md](cartesian_rt/README.md)。
-编译匹配 SDK 后使用同一个入口：
-
-```bash
-python avp_arm_teleop.py <头显IP> --no-cameras --arm-backend cart \
-  --cart-worker /绝对路径/cartesian_worker \
-  --yaw -90 --hz 100 --cart-speed 0.10 --cart-accel 0.4 \
-  --trace /tmp/ar5-cart-trace.csv
-```
-
-`cart` 从当前实测 TCP 保持，不自动回位；起点必须在工作空间盒内。
-初次验证先用 `--no-rotation` 分离位置问题，再加入姿态。C++ 后端不会调用本地IK。
-
-## 本次 MoveL 修复
-
-- 每个新头显帧进入本地缓存；`flush` 做平移/姿态过滤，再一次性提交列表。
-  **整批静止或小于双阈值时不发任务**，不再无条件塞入批末点。
-- 平移和旋转任一超过阈值即可通过。姿态用旋转矩阵角距离，跨 ±π 不会误判大跳变。
-  小于阈值的剩余误差允许保留；死区有精度和响应代价，不能称为“零滞后”。
-- 每批仍按折线长度抽稀。大跨度目标按剩余位置/姿态前导预算分步下发，最终目标保留在本地，
-  后续周期继续追踪。前导满时不把全部历史继续灌进控制器。
-- 设置并回读 NRT `toolset`：工具偏移明确、外部参考系为基座。反馈法兰位姿经同一个工具变换
-  得到 TCP，避免拿工具目标减法兰反馈。`--flange-frame` 显式使用零工具偏移。
-- 读取 SDK 错误码及 `moveExecution` 执行错误。失败向上抛出并退出，不静默换成本地 IK。
-- 松开右手、摘离合、输入陈旧时 `stop()` + `moveReset()`，清除本地和控制器队列。
-  重新接合需等控制器 idle，并从实测位姿重新锚定，不继续旧任务。
-- 输入滤波仅随新帧更新；`flush` 可独立于新帧判断重试最新待发目标。两者仍在同一 Python
-  线程里，因此 MoveL 的 SDK 阻塞没有凭空消失。`cart` 后端使用独立进程解决这个隔离问题。
-
-列表 API 减少调用次数，但不改变 MoveL 的排队性质。`lead-ms` 只参与距离预算换算，
-不能观测队列真实剩余时间，往返路径、加减速、控制器缓存仍可能产生额外延迟。
-如仍出现高频起停，比较 `cart` 后端，不要为了凑批数而把静止噪声重新放进队列。
-
-## 常用参数
-
-| 参数 | 默认 | 含义 |
-|---|---|---|
-| `--hz` | 50Hz | Python读取频率；不会提高头显实际产帧率 |
-| `--movel-dispatch-hz` | 50Hz | 列表批量下发频率；0=每循环尝试；20Hz最多额外等约50ms |
-| `--movel-deadband` | 1mm | 相对最后保留/下发位姿的平移阈值 |
-| `--movel-rot-deadband` | 0.5° | 姿态阈值；纯旋转也会通过 |
-| `--movel-speed` | 250mm/s | MoveL设定速度，不代表短段一定能达到 |
-| `--movel-zone` | 3mm | 转弯区 |
-| `--movel-lead-ms` | 50ms | 与速度相乘得到位置前导预算，非延迟保证 |
-| `--movel-rot-lead` | 0.15rad | 姿态前导预算 |
-| `--movel-buffer` | 64 | 本地缓存容量，范围1..100 |
-| `--no-movel-batch-append` | 关闭 | 显式退回逐条提交，用于对照 |
-| `--movel-adaptive-speed` | 关闭 | 实验性逐批调速，不能保证消除起停 |
-| `--cart-speed` / `--cart-accel` | 0.10 / 0.4 | C++线速度 m/s、加速度 m/s² |
-| `--cart-angular-speed` / `--cart-angular-accel` | 0.5 / 1.0 | C++角速度 rad/s、角加速度 rad/s² |
-| `--max-stale` | 0.25s | 无新输入超时；cart还检查C++反馈新鲜度 |
-| `--arm-smooth` / `--arm-smooth-beta` | 1.0 / 3.0 | One-Euro参数；有滤波滞后，0关闭输入滤波 |
-| `--scale` / `--rot-scale` | 1 / 1 | 位移/旋转倍率 |
-| `--delta-frame` | tool | tool映射随末端转动；base映射固定于基座 |
-| `--tcp-z` | 0m | 受控TCP沿法兰Z的偏移；测准后填写 |
-| `--gain`、`--ik`、`--lock-j5` | 见帮助 | 仅本地IK的rt后端使用 |
-
-MoveL运行时：`[` / `]` 调平移死区，`d` 看窗口统计，`s` 看起停统计，`a` 开关实验性自适应速度。
-所有模式：ENTER挂/摘离合，右手保持捏合，q退出。`--auto-arm` 仅允许配 `--mock`。
-
-## 坐标系与空间
-
-Tracking Streamer输出约定：X右、Y前、Z上；臂基座：X前、Y左、Z上。
-常见安装对应 `--yaw -90`，但必须按现场站位和安装方向确认：
-
-```bash
-python probe_axes.py <头显IP>   # 不碰臂，检查方向和镜像
-```
-
-只有左右反而前后正确时，检查 `--mirror lr`；yaw旋转不能代替反射。
-映射为 `A = R_yaw @ M`，位置用 `A Δp`，旋转用 `A ΔR Aᵀ`。
-当前姿态来源是 `left_wrist` 旋转矩阵；不要把历史文档中掌骨架诊断方法当成当前控制输入。
-
-当前工作空间盒（基座坐标，受控点）：X `[0.22,0.58]`、Y `[-0.516,0.28]`、Z `[0.08,0.42]` m。
-非零TCP改变受控点，需重新核对工具、手指和台面的空间余量。
-该盒子不等同于运动学可达性；姿态、关节限位和奇异问题由控制器报告。
-
-## 离线验证
-
-```bash
-python test_changes.py
-cmake -S cartesian_rt -B cartesian_rt/build
-cmake --build cartesian_rt/build -j2
-ctest --test-dir cartesian_rt/build --output-on-failure
-python test_cartesian_backends.py
-```
-
-不指定 SDK 的 CMake 构建只支持 mock，真实控制请求会直接报错。
-`test_cartesian_backends.py` 用 Unix socket 启动真正的 C++ 子进程，但只传 `--mock`，不连接真机。
-C++文件不存在时进程测试会明确跳过；可用 `ATOM_CART_WORKER=/路径/cartesian_worker` 指定已编译版本。
-
-两个终端运行完整假头显链路：
-
-```bash
-# 终端1
-python mock_avp.py
-# 终端2：任选一个后端；假头显启动3秒后右手捏合
-python avp_arm_teleop.py 127.0.0.1 --mock --mock-hand --auto-arm --no-cameras \
-  --no-home --arm-backend movel --seconds 10
-python avp_arm_teleop.py 127.0.0.1 --mock --mock-hand --auto-arm --no-cameras \
-  --arm-backend cart --seconds 10 --trace /tmp/cart-mock.csv
-```
-
-Mock不证明控制器支持笛卡尔RT，也不模拟真实动力学、碰撞、奇异或MoveL短段加减速。
-真机验收建议记录低速直线、往返、原地旋转和启停，比较输入、目标、下发指令与实测TCP。
-
-## 文件
-
-| 文件 | 用途 |
+| 键 | 作用 |
 |---|---|
-| `avp_arm_teleop.py` | 统一入口，MoveL / cart / 本地IK备选 |
-| `movel_stream.py` | NRT列表批量、双死区、前导、工具配置、停机 |
-| `avp_cart_teleop.py` / `cartesian_bridge.py` | cart前端、进程协议和记录 |
-| `cartesian_rt/` | C++最新目标跟踪、SDK适配、构建说明 |
-| `mock_movel.py` / `mock_avp.py` | 假控制器、假头显 |
-| `test_changes.py` / `test_cartesian_backends.py` | 旧回归与新控制后端回归 |
-| `home_arm.py` | 独立关节回位；不要与遥操同时运行 |
-| `hand_retarget.py` / `inspire_hand6.py` | 灵巧手映射和驱动 |
-| `probe_axes.py` / `test_fingers.py` | 坐标诊断 / 单独测手指 |
-| `try_cartesian_rt.py` / `diag_cartesian_rt.py` | 旧Python笛卡尔RT诊断；其失败结论限定于当时SDK配置 |
+| ENTER | 挂 / 摘离合，打印 `[离合] 挂上` 才算生效 |
+| 右手捏合 | 挂上离合后保持捏住，臂才跟；松开即停 |
+| `h` | 停下、退出 servoJ、关节回位，然后程序退出 |
+| `q` | 退出 |
 
-手标定：`python avp_arm_teleop.py <头显IP> --calib`。手的温度会变化但电机不响应时，
-使用 `test_fingers.py` 独立定位，不要据此调整机械臂控制参数。
+---
+
+## 回位和救援
+
+| 情况 | 做法 |
+|---|---|
+| 遥操中想回起始姿态 | 按 `h` |
+| 遥操没在跑 | `home_arm.py`（排队式 MoveAbsJ，不开实时模式）。**不要和遥操同时跑** |
+| 运动被静默拒绝（`reachTarget=False` 但 `ec=0`）= 关节在软限位外 | 先 `softlimit_rescue.py --dry-run` 看计划，再 `softlimit_rescue.py`（要输入 yes）：临时关软限位、把超限关节转回限位内、收尾恢复软限位；之后再跑 `home_arm.py`。这种情况下直接跑 `home_arm.py` 会**误报「完成」** |
+| 急停、上不了电、手不回包等 | 见 [遥操作_servoJ](遥操作_servoJ.md) 第七节 |
+
+都在 `VR设备` 目录下跑，例如：
+
+```bash
+PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python home_arm.py
+PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python softlimit_rescue.py --dry-run
+```
+
+---
+
+## 采集（概要）
+
+完整流程见 [数据采集_servoJ](数据采集_servoJ.md)。
+
+1. 看相机：用 SO101 的 `atom_robot.ar5.view_camera`（要 `cd 数据_硬件/SO101` 再 `-m` 运行），**不要用本目录的 `view_cameras.py`**（它用 V4L2 去开所有相机，碰了 Orbbec 会和 OBSENSOR 互相污染）。
+2. 主命令加 `--record --out-dir … --task "…"`，空格开录，`s` 存并标成功，`←` 存但不标成功，退格丢弃。
+3. 采完：`qc_episodes.py` 自动检查 → `replay_episode.py` 回放 → `manage_episodes.py` 删和编号 →
+   `to_lerobot_dex.py`（lerobot 环境）或 `to_dexgraspvla.py` 转数据集。
+
+`to_dexgraspvla.py` 被 `算法/DexGraspVLA/make_h100_dataset.sh` 按相对路径调用，**不能挪位置、不能改名**。
+
+---
+
+## 模拟运行
+
+**servoJ 没有模拟模式**：`avp_servoj_teleop.py` 没有 `--mock`，一启动就连真臂。
+
+不连硬件只能跑 `avp_arm_teleop.py` 的假头显链路（MoveL 后端，假臂、假手），命令见
+[avp_arm_teleop操作手册](avp_arm_teleop操作手册.md)「离线验证」最后一段。它验证的是头显 → 映射 → 手 → MoveL 那条链，不是 servoJ。
+
+---
+
+## 环境
+
+- conda 环境 `dexgraspvla`，命令前一律加 `PYTHONPATH=`（`~/.bashrc` 加载的 ROS 会污染它）。
+  遥操要的 `pymodbus`（2.5.3）、`avp_stream`、`grpc`、`ruckig` 都已装在里面。
+- `to_lerobot_dex.py` 用 `lerobot` 环境。
+- `requirements.txt` 已过时（只列了 vuer / numpy / cryptography），别照它装。
+- AR5 驱动用工作区里的 `数据_硬件/SO101/atom_robot`，由 `ws_paths.py` 往上找工作区根自动定位。
+  单独拷走这个目录、换机器的规则见 [工作区说明](../../../工作区说明.md) 第 3、6 节。
+
+---
+
+## 离线测试
+
+不连任何硬件，在 `VR设备` 目录下：
+
+```bash
+PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python test_changes.py   # 最后打印「全部通过」
+PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python bench_ik.py       # 正常结束
+```
+
+- `test_changes.py` 测的是手的握拳耦合、`AR5OptIK` 对驱动的契约、模块导入、MoveL 缓存，**测不到 servoJ 主链**
+  （选解层、延迟样条、beside）。servoJ 主链没有离线测试，改了只能上真机看退出统计。
+- C++ 笛卡尔后端的测试（要先编译）和假头显链路见 [avp_arm_teleop操作手册](avp_arm_teleop操作手册.md)「离线验证」。
+- 正常结果和真机验收基准见 [工作区说明](../../../工作区说明.md) 第 5 节。
+
+---
+
+## 文件地图
+
+| 分组 | 文件 |
+|---|---|
+| 主链 | `avp_servoj_teleop.py`（主程序）、`ar5_poe_ik.py` + `paden_kahan.py`（闭式逆解）、`ar5_ik_select.py` + `ar5_sew.py`（选解层）、`ar5_dh.json`、`hand_retarget.py` + `hand_calib.json`、`inspire_hand6.py`（手的驱动）、`gripper.py`、`ws_paths.py`、`vel_kin.py` |
+| 主链依赖的对照方案 | `avp_arm_teleop.py`、`avp_movel_teleop.py`：servoJ 主程序从这两个文件里导入滤波器、连头显、日志等，**不能删** |
+| 数采 | `episode_recorder.py`、`qc_episodes.py`、`replay_episode.py`、`manage_episodes.py`、`to_lerobot_dex.py`、`to_dexgraspvla.py` |
+| 回位 / 救援 | `home_arm.py`、`softlimit_rescue.py`、`jog_joint.py`、`drag_back.py`、`goto_zero.py` |
+| 标定 / 诊断 | `probe_axes.py`（定 `--yaw` / `--mirror`）、`test_fingers.py`、`probe_servoj.py`、`check_fk.py`、`read_dh.py`、`probe_hand_tcp.py`、`probe_hand_data.py` |
+| 其他对照方案 | `movel_stream.py`、`mock_movel.py`、`avp_cart_teleop.py`、`cartesian_bridge.py`、`pose_math.py`、`cartesian_rt/`；`try_*`、`diag_*` 是探路脚本 |
+| 测试 / 模拟 | `test_changes.py`、`test_cartesian_backends.py`、`bench_ik.py`、`mock_avp.py` |
+| 夹爪 | `hkvr_gripper.py`（旧入口，直接运行只做离线自检）、`probe_gripper.py` |
+| 早期方案 | `avp_teleop.py`、`vision_pro_pose.py` + `gen_cert.py`（vuer 那条路）、`view_cameras.py`、`probe_cameras.py`（都走 V4L2，别拿来看 Orbbec） |
+| 日志 | `logs/servoj_<时间>.log`：每次运行自动写，不进 git |
+
+---
+
+## 硬件依赖
+
+| 设备 | 地址 / 说明 |
+|---|---|
+| AR5 控制器 | `192.168.2.160`，本机网卡 `192.168.2.222`（`--robot-ip` / `--local-ip` 可改） |
+| 灵巧手 RH56 | 默认网口 `tcp://192.168.11.210:6000`；备用走 CAN：`--hand-port /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0` |
+| Vision Pro | 头显上跑 Tracking Streamer，本机是客户端；IP 每次从界面上读 |
+| 相机（只有录制时用） | 两台 Orbbec：顶部 Gemini 335（序列号 CP0BB53000FC）、腕部 Gemini 305（序列号 CV27864000V2） |
+| 珞石 SDK | `数据_硬件/xCoreSDK-Python`，v0.7.1（servoJ 用的 `setServoJoint` 要这个版本） |
+
+---
+
+## 已知问题
+
+- **解支跳变、换构型时臂会甩**：10-10 基线那次「解→解」最大 173.8°，10-15 那次 47.5°。读法见 [遥操作_servoJ](遥操作_servoJ.md) 第六节。
+- **腕部 Gemini 305 不能走 OBSENSOR**：一帧不出，还会把 V4L2 也弄坏，只能物理拔插救回来。
+  `atom_robot` 的默认配置正好让它走 OBSENSOR，录制时怎么绕开见 [数据采集_servoJ](数据采集_servoJ.md) 第 2 节（在 servoJ 上**未验证**）。
+- `--cam-top` / `--cam-front` 的帮助文字过时，还写着「序列号都一样」「不在腕上」。
+- `--ee gripper` 只记录指令、不驱动夹爪；那只航凯夹爪 9/30 过载后卡滞，在等厂家。
+- SO101 和 VR 两条线的采集默认都存到 `~/atom_episodes`，一个任务一个子目录，两条线的数据别混在一个目录里。
+- C++ 笛卡尔后端的编译目录带着旧路径缓存，要删掉重编，见 [cartesian_rt/README.md](cartesian_rt/README.md)。
+
+---
+
+## 文档索引
+
+| 文档 | 讲什么 |
+|---|---|
+| [遥操作_servoJ](遥操作_servoJ.md) | servoJ 怎么用、原理、参数、日志怎么看、出问题看哪里 |
+| [数据采集_servoJ](数据采集_servoJ.md) | 在 servoJ 上录数据、检查、删改、转数据集 |
+| [AR5遥操三条路](AR5遥操三条路.md) | 本地逆解 + 关节实时流、MoveL、servoJ 三条路是怎么试出来的 |
+| [avp_arm_teleop操作手册](avp_arm_teleop操作手册.md) | 对照用的 MoveL / cart / rt 三个后端 |
+| [cartesian_rt/README.md](cartesian_rt/README.md) | C++ 笛卡尔实时后端的编译和验证 |
+| [调试历史_2026-09-20](调试历史_2026-09-20.md) | 修复前的调试记录，只作历史参考 |
+| [工作区说明](../../../工作区说明.md) | 整个工作区的结构、环境、迁移、离线测试基准 |
+| [数据转换说明](../../../算法/DexGraspVLA/数据转换说明.md) | 采集数据转成 DexGraspVLA 数据集 |
+| [SO101 数据采集](../../SO101/数据采集.md) | SO-101 主从臂那条采集线（不是 Vision Pro） |

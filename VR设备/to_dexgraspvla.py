@@ -438,7 +438,7 @@ def main() -> int:
         print(f"    训练时覆盖 shape_meta，并从官方 ckpt 部分加载（形状不符的两端随机初始化）：")
         print(f"        'task.shape_meta.obs.right_state.shape=[{dim}]' "
               f"'task.shape_meta.action.shape=[{dim}]'")
-        print(f"        policy.start_ckpt_path=<官方 ckpt> +training.start_ckpt_skip_mismatch=true")
+        print(f"        \"policy.start_ckpt_path='<官方 ckpt>'\" +training.start_ckpt_skip_mismatch=true")
     if a.mask == "none":
         print(f"\n  ⚠ rgbm 的第 4 通道是全 255 的占位掩码。")
         print(f"    掩码是他们定位目标物体的唯一输入，**这样训不出对的东西**。")
