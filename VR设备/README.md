@@ -139,7 +139,8 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python bench_ik.py       # 正常�
 
 - **解支跳变、换构型时臂会甩**：10-10 基线那次「解→解」最大 173.8°，10-15 那次 47.5°。读法见 [遥操作_servoJ](遥操作_servoJ.md) 第六节。
 - **腕部 Gemini 305 不能走 OBSENSOR**：一帧不出，还会把 V4L2 也弄坏，只能物理拔插救回来。
-  `atom_robot` 的默认配置正好让它走 OBSENSOR，录制时怎么绕开见 [数据采集_servoJ](数据采集_servoJ.md) 第 2 节（在 servoJ 上**未验证**）。
+  10-15 起 `atom_robot` 的 config 让它走 V4L2（只开相机核对过，servoJ 录制里还没真跑过），见 [数据采集_servoJ](数据采集_servoJ.md) 第 2 节。
+  别同时开 RobotJev（它只走 OBSENSOR）。
 - `--cam-top` / `--cam-front` 的帮助文字过时，还写着「序列号都一样」「不在腕上」。
 - `--ee gripper` 只记录指令、不驱动夹爪；那只航凯夹爪 9/30 过载后卡滞，在等厂家。
 - SO101 和 VR 两条线的采集默认都存到 `~/atom_episodes`，一个任务一个子目录，两条线的数据别混在一个目录里。

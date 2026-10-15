@@ -41,24 +41,25 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python qc_episodes.py --help
 | 键名 | 相机 | 位置 | config 里的写法 |
 |---|---|---|---|
 | `cam_high` | Gemini 335 | 顶部，俯视工作区（9/29 换上来的，之前是绿联） | `orbbec:CP0BB53000FC`（按序列号，走 OBSENSOR） |
-| `cam_front` | Gemini 305 | **腕部**，跟着臂走（9/22 起） | `orbbec:CV27864000V2`（按序列号，走 OBSENSOR） |
+| `cam_front` | Gemini 305 | **腕部**，跟着臂走（9/22 起） | `v4l2:/dev/ar5_cam_wrist`（10-15 起走 V4L2，见下） |
 
 `cam_front` 这个名字是历史原因（原来是台架侧视相机），**9/22 之后它是腕部视角**；`cam_high` 9/29 前后也不是同一台相机。
 
-**腕部 305 不能走 OBSENSOR**：会一帧不出，还会把 V4L2 也弄坏，只能物理拔插救回来。而 config 默认正好让它走 OBSENSOR，所以：
+**腕部 305 不能走 OBSENSOR**：会一帧不出，还会把 V4L2 也弄坏，只能物理拔插救回来。所以 10-15 起 config 里它写成 `v4l2:/dev/ar5_cam_wrist`，明确走 V4L2
+（当天真机核对：335 走 OBSENSOR、305 走 V4L2 同时开，29.7 / 30.1 Hz，640×480）。录制和看相机都按 config 来，不用另外给参数。
 
-- 看相机用 SO101 的 `atom_robot.ar5.view_camera`，**不要用本目录的 `view_cameras.py`**（它用 V4L2 去开所有相机，碰了 Orbbec 会和 OBSENSOR 互相污染）。
-- 也**不要用 `view_camera --all`、或者不带 `--name` 直接跑**：它默认看 `cam_front`，就是让 305 走 OBSENSOR。
+- 看相机用 SO101 的 `atom_robot.ar5.view_camera`，**不要用本目录的 `view_cameras.py`**（它用 V4L2 去开所有相机，335 被 V4L2 碰过之后 OBSENSOR 会掉速）。
+- 别让任何程序用 OBSENSOR 开 305，包括 RobotJev（它的相机代码只走 OBSENSOR）。
 
 ```bash
 cd ~/yuhang_workspace/数据_硬件/SO101
 PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python -m atom_robot.ar5.view_camera --list                           # 列设备，不打开 Orbbec
-PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python -m atom_robot.ar5.view_camera --name cam_high                  # 顶部 335，走 OBSENSOR
-PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python -m atom_robot.ar5.view_camera --source v4l2:/dev/ar5_cam_wrist  # 腕部 305，走 V4L2
+PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python -m atom_robot.ar5.view_camera --name cam_high   # 顶部 335，走 OBSENSOR
+PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python -m atom_robot.ar5.view_camera                    # 默认看 cam_front：腕部 305，走 V4L2
+PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python -m atom_robot.ar5.view_camera --all              # 两路并排
 ```
 
 - `/dev/ar5_cam_wrist` 是 udev 规则给的固定名（规则 `数据_硬件/SO101/atom_robot/ar5/99-ar5-cameras.rules`，安装见 [工作区说明](../../../工作区说明.md) 6.4）。
-- 最后一条（用 `view_camera` 走 V4L2 看 305）代码上支持，**没实测过**。
 - 窗口里 `q` 退出、`g` 叠九宫格摆正相机、`s` 存图、`i` 叠信息条。没有图形界面时加 `--save-only 30` 只抓帧存图。
 - 同一台 Orbbec 别在 OBSENSOR 和 V4L2 之间来回切：V4L2 用过之后 OBSENSOR 会掉到约 0.3 Hz（驱动发现帧率低会自动 USB 复位、等 8 秒再开）；
   OBSENSOR 用过之后 V4L2 一帧不出，只能物理拔插。
@@ -75,13 +76,11 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python -m atom_robot.ar5.view_came
 PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python avp_servoj_teleop.py 192.168.x.x --planner spline --lag-ms 50 \
     --rot-mode beside --ws-max-z 0.60 --w-psi 0.5 --max-step-rad 0.015 \
     --record --out-dir ~/atom_episodes/pick_bolt --task "pick up the bolt and put it in the box" \
-    --num-episodes 50 --frame-cap 900 --reset-seconds 5 \
-    --cam-front v4l2:/dev/ar5_cam_wrist
+    --num-episodes 50 --frame-cap 900 --reset-seconds 5
 ```
 
 - `192.168.x.x` 换成头显界面上显示的 IP；`pick_bolt` 和 `--task` 换成这批的任务。
-- 最后一行让腕部 305 走 V4L2，理由见第 2 节。**这个写法在 servoJ 上未验证**（RobotDecision 用 `v4l2:` 开这台相机是正常的）。
-  不加它，录制就按 config 让 305 走 OBSENSOR。
+- 相机按 config 开：335 走 OBSENSOR，305 走 V4L2（第 2 节）。这个组合 10-15 只开相机核对过，**还没在 servoJ 录制里真跑过**。
 - 一启动臂会先关节回位（`--no-home` 跳过）。
 
 ### 键盘
