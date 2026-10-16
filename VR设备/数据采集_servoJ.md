@@ -242,8 +242,8 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python to_dexgraspvla.py --src ~/a
     --dst ~/pick_bolt.zarr --wrist-cam cam_front --head-cam cam_high --mask sam
 ```
 
-- 格式、框、掩码、检查的细节见 [数据转换说明](../../../算法/DexGraspVLA/数据转换说明.md)。
-- `算法/DexGraspVLA/make_h100_dataset.sh` 现在**只支持 SO101 的 8 维数据**（写死了 `--action next-state` 和 `--dim 8`），servoJ 的数据别用它。
+- 格式、框、掩码、检查的细节见 [数据转换说明](../../../算法/DexGraspVLA++/数据转换说明.md)。
+- `算法/DexGraspVLA++/make_h100_dataset.sh` 现在**只支持 SO101 的 8 维数据**（写死了 `--action next-state` 和 `--dim 8`），servoJ 的数据别用它。
 - `to_dexgraspvla.py` 被 `make_h100_dataset.sh` 按相对路径调用，**不能挪位置、不能改名**。
 
 ---

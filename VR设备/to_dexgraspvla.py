@@ -4,10 +4,10 @@
     python to_dexgraspvla.py --src ~/atom_episodes/<任务> --dst <数据集>/<任务>.zarr \
         --wrist-cam cam_front --head-cam cam_high --action next-state --mask sam
 
-一般不直接调它，用 `算法/DexGraspVLA/make_h100_dataset.sh`（参数、环境、校验、
+一般不直接调它，用 `算法/DexGraspVLA++/make_h100_dataset.sh`（参数、环境、校验、
 校验和都包好了）。
 
-格式是从 `算法/DexGraspVLA/DexGraspVLA` 的代码里读出来的，不是猜的：
+格式是从 `算法/DexGraspVLA++/DexGraspVLA` 的代码里读出来的，不是猜的：
 `controller/dataset/mask_image_dataset.py` 只读四个 key，
 `controller/config/task/*.yaml` 给了形状，`inference.py` 给了数值约定。
 
