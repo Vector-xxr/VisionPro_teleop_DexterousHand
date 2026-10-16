@@ -66,7 +66,7 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python softlimit_rescue.py --dry-r
 3. 采完：`qc_episodes.py` 自动检查 → `replay_episode.py` 回放 → `manage_episodes.py` 删和编号 →
    `to_lerobot_dex.py`（lerobot 环境）或 `to_dexgraspvla.py` 转数据集。
 
-`to_dexgraspvla.py` 被 `算法/DexGraspVLA-/make_h100_dataset.sh` 按相对路径调用，**不能挪位置、不能改名**。
+`to_dexgraspvla.py` 被 `数据_硬件/SO101/make_h100_dataset.sh` 按工作区里的固定位置调用，**不能挪位置、不能改名**。
 
 ---
 
@@ -158,5 +158,5 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python bench_ik.py       # 正常�
 | [cartesian_rt/README.md](cartesian_rt/README.md) | C++ 笛卡尔实时后端的编译和验证 |
 | [调试历史_2026-09-20](调试历史_2026-09-20.md) | 修复前的调试记录，只作历史参考 |
 | [工作区说明](../../../工作区说明.md) | 整个工作区的结构、环境、迁移、离线测试基准 |
-| [数据转换说明](../../../算法/DexGraspVLA-/数据转换说明.md) | 采集数据转成 DexGraspVLA 数据集 |
+| [数据转换说明](../../SO101/数据转换说明.md) | 采集数据转成 DexGraspVLA 数据集（在 SO101） |
 | [SO101 数据采集](../../SO101/数据采集.md) | SO-101 主从臂那条采集线（不是 Vision Pro） |
