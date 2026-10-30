@@ -1,7 +1,7 @@
 # Vision Pro servoJ 数据采集
 
 遥操怎么用见 [遥操作_servoJ](遥操作_servoJ.md)。这份是**在 servoJ 遥操上面采数据**：怎么录、怎么检查、怎么删、怎么转成数据集。
-SO-101 主从臂那条采集线是另一套，见 [SO101 数据采集](../../SO101/数据采集.md)。
+SO-101 主从臂那条采集线是另一套，见 [SO101 数据采集](../../../算法/DexGraspVLA-/SO101/数据采集.md)。
 
 > **这条路还没真正采过数据。** 本机 `~/atom_episodes`、`~/vel_episodes` 里的 497 个 npz 都没有 `ee_target` 字段，
 > 而这是 `episode_recorder.py` 必写的，所以都不是 servoJ `--record` 录的。下面的键位和参数对照代码核过，
@@ -52,14 +52,14 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python qc_episodes.py --help
 - 别让任何程序用 OBSENSOR 开 305，包括 RobotJev（它的相机代码只走 OBSENSOR）。
 
 ```bash
-cd ~/yuhang_workspace/数据_硬件/SO101
+cd ~/yuhang_workspace/算法/DexGraspVLA-/SO101
 PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python -m atom_robot.ar5.view_camera --list                           # 列设备，不打开 Orbbec
 PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python -m atom_robot.ar5.view_camera --name cam_high   # 顶部 335，走 OBSENSOR
 PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python -m atom_robot.ar5.view_camera                    # 默认看 cam_front：腕部 305，走 V4L2
 PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python -m atom_robot.ar5.view_camera --all              # 两路并排
 ```
 
-- `/dev/ar5_cam_wrist` 是 udev 规则给的固定名（规则 `数据_硬件/SO101/atom_robot/ar5/99-ar5-cameras.rules`，安装见 [工作区说明](../../../工作区说明.md) 6.4）。
+- `/dev/ar5_cam_wrist` 是 udev 规则给的固定名（规则 `算法/DexGraspVLA-/SO101/atom_robot/ar5/99-ar5-cameras.rules`，安装见 [工作区说明](../../../工作区说明.md) 6.4）。
 - 窗口里 `q` 退出、`g` 叠九宫格摆正相机、`s` 存图、`i` 叠信息条。没有图形界面时加 `--save-only 30` 只抓帧存图。
 - 同一台 Orbbec 别在 OBSENSOR 和 V4L2 之间来回切：V4L2 用过之后 OBSENSOR 会掉到约 0.3 Hz（驱动发现帧率低会自动 USB 复位、等 8 秒再开）；
   OBSENSOR 用过之后 V4L2 一帧不出，只能物理拔插。
@@ -242,8 +242,8 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python to_dexgraspvla.py --src ~/a
     --dst ~/pick_bolt.zarr --wrist-cam cam_front --head-cam cam_high --mask sam
 ```
 
-- 格式、框、掩码、检查的细节见 [数据转换说明](../../SO101/数据转换说明.md)。
-- `数据_硬件/SO101/make_h100_dataset.sh` 现在**只支持 SO101 的 8 维数据**（写死了 `--action next-state` 和 `--dim 8`），servoJ 的数据别用它。
+- 格式、框、掩码、检查的细节见 [数据转换说明](../../../算法/DexGraspVLA-/SO101/数据转换说明.md)。
+- `算法/DexGraspVLA-/SO101/make_h100_dataset.sh` 现在**只支持 SO101 的 8 维数据**（写死了 `--action next-state` 和 `--dim 8`），servoJ 的数据别用它。
 - `to_dexgraspvla.py` 被 `make_h100_dataset.sh` 按相对路径调用，**不能挪位置、不能改名**。
 
 ---
@@ -290,4 +290,4 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python to_dexgraspvla.py --src ~/a
 | `manage_episodes.py` | 删条目、清孤儿、补编号 |
 | `to_lerobot_dex.py` | 转 lerobot 数据集（在 lerobot 环境里跑） |
 | `to_dexgraspvla.py` | 转 DexGraspVLA 的 zarr 数据集（dexgraspvla 环境） |
-| `数据_硬件/SO101/atom_robot/ar5/view_camera.py` | 开录前看相机（在 SO101 目录下 `-m` 运行） |
+| `算法/DexGraspVLA-/SO101/atom_robot/ar5/view_camera.py` | 开录前看相机（在 SO101 目录下 `-m` 运行） |

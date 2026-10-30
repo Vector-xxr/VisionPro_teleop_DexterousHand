@@ -4,7 +4,7 @@
     python to_dexgraspvla.py --src ~/atom_episodes/<任务> --dst <数据集>/<任务>.zarr \
         --wrist-cam cam_front --head-cam cam_high --action next-state --mask sam
 
-一般不直接调它，用 `数据_硬件/SO101/make_h100_dataset.sh`（参数、环境、校验、
+一般不直接调它，用 `算法/DexGraspVLA-/SO101/make_h100_dataset.sh`（参数、环境、校验、
 校验和都包好了）。
 
 格式是从 `算法/DexGraspVLA-` 的代码里读出来的，不是猜的：
@@ -152,7 +152,10 @@ def select_bboxes(eps, head, bboxes, bbox_file):
         cap.release()
         if not ok:
             continue
-        x, y, w, h = cv2.selectROI(f"{p.stem}  框目标物体，回车确认，c 跳过", f0, showCrosshair=True)
+        # 窗口标题只能用英文：OpenCV 的 Qt 界面按名字找窗口，标题带中文就找不到，
+        # selectROI 直接报 NULL window handler（10-23 实测，opencv 5.0.0）。中文说明打在终端里。
+        print(f"  {p.stem}：在弹出的窗口里拖框框住目标物体，回车确认，c 跳过")
+        x, y, w, h = cv2.selectROI(f"{p.stem}  drag a box, Enter = OK, c = skip", f0, showCrosshair=True)
         cv2.destroyAllWindows()
         if w > 0 and h > 0:
             bboxes[p.stem] = {"box": [int(x), int(y), int(x + w), int(y + h)],

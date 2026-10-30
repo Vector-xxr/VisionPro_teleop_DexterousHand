@@ -17,7 +17,7 @@
 
 | 依赖 | 是什么 | 在原工作区的位置 |
 |---|---|---|
-| `atom_robot` | AR5 臂驱动（`AR5Env`）、配置、坐标变换、相机驱动。和 SO-101 主从臂采集共用一份 | `数据_硬件/SO101/atom_robot/`（另一个仓库，目前没有公开） |
+| `atom_robot` | AR5 臂驱动（`AR5Env`）、配置、坐标变换、相机驱动。和 SO-101 主从臂采集共用一份 | `算法/DexGraspVLA-/SO101/atom_robot/`（另一个仓库，目前没有公开） |
 | `xCoreSDK-Python` v0.7.1 | 珞石官方 Python SDK，servoJ 用的 `setServoJoint` 要这个版本 | `数据_硬件/xCoreSDK-Python/` |
 
 代码靠 `VR设备/ws_paths.py` 找它们：从自身位置往上找「同时有 `算法/` 和 `数据_硬件/` 的目录」当工作区根。

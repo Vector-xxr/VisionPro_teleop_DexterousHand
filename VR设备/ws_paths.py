@@ -23,7 +23,7 @@ def _find_workspace() -> Path:
 
 WS = _find_workspace()
 SDK_ROOT = WS / "数据_硬件" / "xCoreSDK-Python"                  # 珞石 SDK
-SO101 = WS / "数据_硬件" / "SO101"                               # atom_robot 所在目录
+SO101 = WS / "算法" / "DexGraspVLA-" / "SO101"                               # atom_robot 所在目录
 # AR5 驱动：2026-10-15 起和 SO101 共用 atom_robot 这一份（原来用 vel_ar5 里 9-23 的旧副本）。
 # 运动学 kinematics.py / transforms.py 两份逐字节相同，换过来不影响逆解。
 AR5_PKG = SO101 / "atom_robot" / "ar5"

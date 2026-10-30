@@ -9,7 +9,7 @@
 
 - **主力是 servoJ**（`avp_servoj_teleop.py`）。基线是 2026-10-10 那次 275 秒的任务（`logs/servoj_20261010_140947.log`）：
   逆解失败 0/25589，端到端延迟 72ms，对齐后残差 1.9mm，手 20.4Hz、0 错。
-- **2026-10-15 AR5 驱动换成 `数据_硬件/SO101/atom_robot`**，同日真机验收通过（`logs/servoj_20261015_151836.log`，34 秒）：
+- **2026-10-15 AR5 驱动换成 `算法/DexGraspVLA-/SO101/atom_robot`**，同日真机验收通过（`logs/servoj_20261015_151836.log`，34 秒）：
   启动回位正常，逆解失败 0，端到端 72ms，残差 1.5mm，手 20.1Hz、0 错；`home_arm.py` 正常。
 - 手从 10-09 起默认走网口 Modbus TCP。
 - **servoJ 的 `--record` 还没真正采过数据**：本机 `~/atom_episodes`、`~/vel_episodes` 里的 497 个 npz 都没有它必写的 `ee_target` 字段。
@@ -61,12 +61,12 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python softlimit_rescue.py --dry-r
 
 完整流程见 [数据采集_servoJ](数据采集_servoJ.md)。
 
-1. 看相机：用 SO101 的 `atom_robot.ar5.view_camera`（要 `cd 数据_硬件/SO101` 再 `-m` 运行），**不要用本目录的 `view_cameras.py`**（它用 V4L2 去开所有相机，碰了 Orbbec 会和 OBSENSOR 互相污染）。
+1. 看相机：用 SO101 的 `atom_robot.ar5.view_camera`（要 `cd 算法/DexGraspVLA-/SO101` 再 `-m` 运行），**不要用本目录的 `view_cameras.py`**（它用 V4L2 去开所有相机，碰了 Orbbec 会和 OBSENSOR 互相污染）。
 2. 主命令加 `--record --out-dir … --task "…"`，空格开录，`s` 存并标成功，`←` 存但不标成功，退格丢弃。
 3. 采完：`qc_episodes.py` 自动检查 → `replay_episode.py` 回放 → `manage_episodes.py` 删和编号 →
    `to_lerobot_dex.py`（lerobot 环境）或 `to_dexgraspvla.py` 转数据集。
 
-`to_dexgraspvla.py` 被 `数据_硬件/SO101/make_h100_dataset.sh` 按工作区里的固定位置调用，**不能挪位置、不能改名**。
+`to_dexgraspvla.py` 被 `算法/DexGraspVLA-/SO101/make_h100_dataset.sh` 按工作区里的固定位置调用，**不能挪位置、不能改名**。
 
 ---
 
@@ -85,7 +85,7 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python softlimit_rescue.py --dry-r
   遥操要的 `pymodbus`（2.5.3）、`avp_stream`、`grpc`、`ruckig` 都已装在里面。
 - `to_lerobot_dex.py` 用 `lerobot` 环境。
 - `requirements.txt` 已过时（只列了 vuer / numpy / cryptography），别照它装。
-- AR5 驱动用工作区里的 `数据_硬件/SO101/atom_robot`，由 `ws_paths.py` 往上找工作区根自动定位。
+- AR5 驱动用工作区里的 `算法/DexGraspVLA-/SO101/atom_robot`，由 `ws_paths.py` 往上找工作区根自动定位。
   单独拷走这个目录、换机器的规则见 [工作区说明](../../../工作区说明.md) 第 3、6 节。
 
 ---
@@ -158,5 +158,5 @@ PYTHONPATH= ~/miniforge3/envs/dexgraspvla/bin/python bench_ik.py       # 正常�
 | [cartesian_rt/README.md](cartesian_rt/README.md) | C++ 笛卡尔实时后端的编译和验证 |
 | [调试历史_2026-09-20](调试历史_2026-09-20.md) | 修复前的调试记录，只作历史参考 |
 | [工作区说明](../../../工作区说明.md) | 整个工作区的结构、环境、迁移、离线测试基准 |
-| [数据转换说明](../../SO101/数据转换说明.md) | 采集数据转成 DexGraspVLA 数据集（在 SO101） |
-| [SO101 数据采集](../../SO101/数据采集.md) | SO-101 主从臂那条采集线（不是 Vision Pro） |
+| [数据转换说明](../../../算法/DexGraspVLA-/SO101/数据转换说明.md) | 采集数据转成 DexGraspVLA 数据集（在 SO101） |
+| [SO101 数据采集](../../../算法/DexGraspVLA-/SO101/数据采集.md) | SO-101 主从臂那条采集线（不是 Vision Pro） |
